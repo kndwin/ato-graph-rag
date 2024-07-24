@@ -1,0 +1,6 @@
+from: html-native_spans-native_divs
+to: markdown_strict+grid_tables
+toc: true
+wrap: preserve
+filters:
+  - convert-md.lua
