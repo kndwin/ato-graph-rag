@@ -4,9 +4,10 @@
 
 I was doing my tax returns and realize that ATO provides a great corpus of documents that I could "train" play around with and recently learnt about Graph RAG and wanted to use this to play with a few ideas. These are
 
-- How do I transform / scrub data better
+- How do I transform / scrub data better (using Pandoc to transform HTML to MD the way I want)
 - Can I use Go as my language to make API calls and transform data and be more performant than Python (Python took 35mins to fetch 2000 articles and insert 13,000 entities and 16,000 relationships.([Link](https://arc.net/l/quote/bdvblmoy)))
-- How far can I get with the graph RAG approach
+- How far can I get with a naive graph RAG approach (and later optimize using strategies)
+
 
 ## Process
 
@@ -36,7 +37,7 @@ With the above work, I have the baseline RAG ready to go, below are work for the
 
 - Finally played with Tools / Function calling, it's pretty good! More reliable than "forcing" OpenAI to have a JSON schema through prompt engineering
 - Resulted in this funky looking graph
-[Graph of Neo4j](./graph-viz.png)
+![Graph of Neo4j](./graph-viz.png)
 
 `ask-question.go` calculates the baseline RAG with rawdog cosine similarity (one day I'll get a vector database HAHA) and grabs just one (closest) document. This then gets compared with the graph RAG approach where OpenAI will create the cypher query based on the question and graph schema, get that context and create an answer
 
@@ -120,10 +121,15 @@ Always refer to the latest ATO guidelines or consult with a registered tax agent
 
 ## Learnings
 
-- Golang "works", not as fast for dev
+- Golang "works", not as fast for development (partly skill issues) but a good tradeoff for building stuff for performance
+- Naive Graph RAG "works", but like most AI stuff, garbage data gives garbage insights. So optimizing the graph to be "cleaner" will be worthwhile
+- Function calling is nice, it makes inputs / outputs more predictable
+- Still good to do my tax the old fashion way.
 
 ## Next ideas to play with
 
 - Graph RAG right now is super rough and naive, keen to learn some optimizations like
-- [Entity Resolution](https://arc.net/l/quote/xfgqdovjc) 
-- [Element Summarization](https://arc.net/l/quote/jiddlnlw)
+  - [Entity Resolution](https://arc.net/l/quote/xfgqdovjc) 
+  - [Element Summarization](https://arc.net/l/quote/jiddlnlw)
+- Give up on making things nicely embeded (or at least with sqlite) and start using more powerful db's (Cozo + Qdrant)
+  
