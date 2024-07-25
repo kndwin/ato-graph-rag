@@ -37,29 +37,16 @@ func main() {
 		log.Fatal("❌ Error in creating table: ", err)
 	}
 
-	// Initialize OpenAI client
-	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+	chunks, err := getChunksFromDB()
 
-	// Retrieve chunks from the database
-	rows, err := db.Query("SELECT id, chunk FROM chunks")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("❌ Error in getting chunks from db: ", err)
 	}
 
-	// Process each chunk
+	// Initialize OpenAI client
+	ai := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 
-	// Store chunks in memory
-	var chunks []ChunkContent
-	for rows.Next() {
-		var chunk ChunkContent
-		err := rows.Scan(&chunk.ID, &chunk.Chunk)
-		if err != nil {
-			log.Fatal(err)
-		}
-		chunks = append(chunks, chunk)
-	}
-
-	log.Printf("✅ queried the DB: %d results ", len(chunks))
+	log.Printf("✅ Queried from the DB: %d results ", len(chunks))
 
 	// Set up concurrency
 	numWorkers := 11 // Adjust this number based on your needs and API limits
@@ -69,7 +56,7 @@ func main() {
 	// Start worker goroutines
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go worker(client, db, chunkChan, &wg)
+		go embedWorker(ai, db, chunkChan, &wg)
 	}
 
 	// Send chunks to workers
@@ -84,17 +71,12 @@ func main() {
 	fmt.Println("✅ All chunks processed and embeddings stored.")
 }
 
-type ChunkContent struct {
-	ID    int
-	Chunk string
-}
-
-func worker(client *openai.Client, db *sql.DB, chunkChan <-chan ChunkContent, wg *sync.WaitGroup) {
+func embedWorker(ai *openai.Client, db *sql.DB, chunkChan <-chan ChunkContent, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for chunk := range chunkChan {
 		// Create embedding using OpenAI API
-		resp, err := client.CreateEmbeddings(
+		resp, err := ai.CreateEmbeddings(
 			context.Background(),
 			openai.EmbeddingRequest{
 				Input: []string{chunk.Chunk},
@@ -120,6 +102,6 @@ func worker(client *openai.Client, db *sql.DB, chunkChan <-chan ChunkContent, wg
 			continue
 		}
 
-		fmt.Printf("Processed chunk %d\n", chunk.ID)
+		fmt.Printf("> ✅ Processed chunk %d\n", chunk.ID)
 	}
 }
